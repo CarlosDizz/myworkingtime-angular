@@ -1,5 +1,9 @@
-import { Component, ChangeDetectionStrategy, signal, computed, OnInit, OnDestroy, WritableSignal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, OnInit, OnDestroy, WritableSignal, ViewChild, ElementRef, effect, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
+// Declare globals provided by CDN scripts
+declare var FullCalendar: any;
+declare var echarts: any;
 
 interface TimeEntry {
   type: 'in' | 'out';
@@ -9,20 +13,20 @@ interface TimeEntry {
 type ActiveView = 'hoy' | 'calendario' | 'resumen' | 'perfil';
 type SummaryView = 'semanal' | 'mensual';
 
-interface CalendarDay {
-  dayOfMonth: number | null;
-  isCurrentMonth: boolean;
-  isToday: boolean;
-}
-
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule]
+  imports: [CommonModule],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA] // Allow Ionic Web Components
 })
 export class AppComponent implements OnInit, OnDestroy {
+  @ViewChild('calendarContainer') calendarEl!: ElementRef;
+  private calendar: any;
+
+  @ViewChild('chartContainer') chartEl!: ElementRef;
+  private chart: any;
   
   // State Signals
   currentTime: WritableSignal<Date> = signal(new Date());
@@ -37,12 +41,6 @@ export class AppComponent implements OnInit, OnDestroy {
     { day: 'D', hours: 0 }
   ]);
   
-  // Calendar state
-  calendarDate = signal(new Date());
-  calendarDays = computed<CalendarDay[]>(() => this.generateCalendarDays(this.calendarDate()));
-  calendarMonthYear = computed(() => this.calendarDate().toLocaleString('es-ES', { month: 'long', year: 'numeric' }));
-
-
   // Computed Signals
   clockedIn = computed(() => {
     const lastEntry = this.timeEntries().slice(-1)[0];
@@ -76,17 +74,107 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private timerId: any;
 
+  constructor() {
+    effect(() => {
+      if (this.activeView() === 'calendario') {
+        setTimeout(() => this.renderCalendar(), 0);
+      } else if (this.calendar) {
+        this.calendar.destroy();
+        this.calendar = null;
+      }
+    });
+
+    effect(() => {
+      if (this.activeView() === 'resumen' && this.summaryView() === 'semanal') {
+        setTimeout(() => this.renderChart(), 0);
+      } else if (this.chart) {
+        this.chart.dispose();
+        this.chart = null;
+      }
+    });
+  }
+
   ngOnInit() {
     this.timerId = setInterval(() => {
       this.currentTime.set(new Date());
     }, 1000);
+    window.addEventListener('resize', this.onResize);
   }
 
   ngOnDestroy() {
     if (this.timerId) {
       clearInterval(this.timerId);
     }
+    window.removeEventListener('resize', this.onResize);
   }
+
+  onResize = () => {
+    if (this.chart) {
+      this.chart.resize();
+    }
+  }
+
+  renderCalendar(): void {
+    if (this.calendarEl && !this.calendar) {
+      this.calendar = new FullCalendar.Calendar(this.calendarEl.nativeElement, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+          left: 'prev,next',
+          center: 'title',
+          right: 'today'
+        },
+        locale: 'es',
+        buttonText: {
+          today: 'Hoy'
+        }
+      });
+      this.calendar.render();
+    }
+  }
+
+  renderChart(): void {
+    if (this.chartEl && !this.chart) {
+      this.chart = echarts.init(this.chartEl.nativeElement);
+      const option = {
+        tooltip: {
+          trigger: 'axis'
+        },
+        xAxis: {
+          type: 'category',
+          data: this.weeklyHours().map(d => d.day),
+          axisLine: { lineStyle: { color: '#888' } }
+        },
+        yAxis: {
+          type: 'value',
+          splitLine: { lineStyle: { color: '#444' } },
+          axisLine: { lineStyle: { color: '#888' } }
+        },
+        series: [{
+          name: 'Horas',
+          type: 'bar',
+          data: this.weeklyHours().map(d => d.hours),
+          itemStyle: {
+            color: '#22d3ee', // Tailwind's cyan-400
+            borderRadius: [4, 4, 0, 0]
+          },
+          emphasis: {
+            itemStyle: {
+                color: '#67e8f9' // Tailwind's cyan-300
+            }
+          }
+        }],
+        grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+        },
+        backgroundColor: 'transparent'
+      };
+      this.chart.setOption(option);
+    }
+  }
+
 
   handleClockInOut(): void {
     const newEntry: TimeEntry = {
@@ -100,8 +188,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.activeView.set(view);
   }
 
-  changeSummaryView(view: SummaryView): void {
-    this.summaryView.set(view);
+  changeSummaryView(event: any): void {
+    this.summaryView.set(event.detail.value);
   }
   
   pad(num: number): string {
@@ -110,32 +198,5 @@ export class AppComponent implements OnInit, OnDestroy {
 
   formatTime(date: Date): string {
     return `${this.pad(date.getHours())}:${this.pad(date.getMinutes())}:${this.pad(date.getSeconds())}`;
-  }
-
-  private generateCalendarDays(date: Date): CalendarDay[] {
-    const today = new Date();
-    const year = date.getFullYear();
-    const month = date.getMonth();
-
-    const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0);
-    
-    const daysInMonth = lastDayOfMonth.getDate();
-    const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7; // 0=Monday, 6=Sunday
-
-    const days: CalendarDay[] = [];
-
-    // Add blank days for the previous month
-    for (let i = 0; i < startDayOfWeek; i++) {
-      days.push({ dayOfMonth: null, isCurrentMonth: false, isToday: false });
-    }
-
-    // Add days of the current month
-    for (let i = 1; i <= daysInMonth; i++) {
-      const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === i;
-      days.push({ dayOfMonth: i, isCurrentMonth: true, isToday: isToday });
-    }
-    
-    return days;
   }
 }
