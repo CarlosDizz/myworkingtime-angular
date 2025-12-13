@@ -1,0 +1,5 @@
+{
+  "name": "MyWorkingTime",
+  "description": "A modern time tracking application for employees to manage their work hours, view schedules, and handle time-off requests. This applet focuses on the core clock-in and clock-out functionality for the worker.",
+  "requestFramePermissions": []
+}

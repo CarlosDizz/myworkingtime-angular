@@ -1,0 +1,202 @@
+<div class="min-h-screen bg-gray-900 text-white flex flex-col font-sans">
+  <!-- Header based on active view -->
+  <header class="p-4 text-center">
+    @if (activeView() === 'hoy') {
+      <p class="text-sm text-gray-400">{{ currentTime() | date:'EEEE, d MMMM' }}</p>
+      <h1 class="text-5xl font-bold tracking-wider">{{ currentTime() | date:'HH:mm:ss' }}</h1>
+    } @else {
+      <h1 class="text-3xl font-bold tracking-wide capitalize">{{ activeView() }}</h1>
+    }
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow flex flex-col items-center p-4 space-y-8 overflow-y-auto pb-24">
+    
+    @if (activeView() === 'hoy') {
+      <!-- Clock-in Card -->
+      <div class="w-full max-w-sm bg-gray-800 rounded-3xl p-8 shadow-2xl text-center flex flex-col items-center space-y-6">
+        <div [class]="'w-24 h-24 rounded-full flex items-center justify-center ' + (clockedIn() ? 'bg-red-500/20' : 'bg-green-500/20')">
+          <div [class]="'w-20 h-20 rounded-full flex items-center justify-center ' + (clockedIn() ? 'bg-red-500/30' : 'bg-green-500/30')">
+            <button 
+                (click)="handleClockInOut()"
+                [class]="'w-16 h-16 rounded-full text-white text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ' + (clockedIn() ? 'bg-red-600 hover:bg-red-500' : 'bg-green-600 hover:bg-green-500')">
+                {{ clockedIn() ? 'Salir' : 'Fichar' }}
+            </button>
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <p class="text-lg font-medium text-gray-300">
+            {{ clockedIn() ? 'Jornada en curso' : 'Jornada no iniciada' }}
+          </p>
+          <p class="text-3xl font-bold text-cyan-400 mt-2">{{ formattedWorkedTime() }}</p>
+          <p class="text-sm text-gray-500">Horas trabajadas hoy</p>
+        </div>
+      </div>
+
+      <!-- Time Entries List -->
+      <div class="w-full max-w-sm bg-gray-800 rounded-2xl p-4 shadow-lg">
+        <h2 class="text-lg font-semibold text-center text-gray-300 mb-4">Fichajes de Hoy</h2>
+        @if (timeEntries().length === 0) {
+          <p class="text-center text-gray-500 py-4">Aún no hay fichajes.</p>
+        } @else {
+          <ul class="space-y-3">
+            @for (entry of timeEntries(); track entry.time) {
+              <li class="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  @if (entry.type === 'in') {
+                    <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l.293.293a1 1 0 001.414-1.414l-3-3z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <span class="font-medium text-gray-200">Entrada</span>
+                  } @else {
+                    <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-.707-3.707a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 1.414L9 10.586V7a1 1 0 10-2 0v3.586l-.293-.293a1 1 0 00-1.414 1.414l3 3z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <span class="font-medium text-gray-200">Salida</span>
+                  }
+                </div>
+                <span class="font-mono text-gray-400">{{ formatTime(entry.time) }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+
+    @if (activeView() === 'calendario') {
+      <div class="w-full max-w-sm bg-gray-800 rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center justify-between mb-4">
+           <h2 class="text-lg font-semibold text-white capitalize">{{ calendarMonthYear() }}</h2>
+        </div>
+        <div class="grid grid-cols-7 gap-2 text-center">
+          <div class="text-xs font-bold text-gray-500">L</div>
+          <div class="text-xs font-bold text-gray-500">M</div>
+          <div class="text-xs font-bold text-gray-500">X</div>
+          <div class="text-xs font-bold text-gray-500">J</div>
+          <div class="text-xs font-bold text-gray-500">V</div>
+          <div class="text-xs font-bold text-gray-500">S</div>
+          <div class="text-xs font-bold text-gray-500">D</div>
+          @for (day of calendarDays(); track $index) {
+            <div [class]="'w-10 h-10 flex items-center justify-center rounded-full ' + (day.isCurrentMonth ? 'text-gray-200' : 'text-gray-600') + (day.isToday ? ' bg-cyan-500 text-gray-900 font-bold' : '')">
+              {{ day.dayOfMonth }}
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeView() === 'resumen') {
+      <div class="w-full max-w-sm space-y-6">
+        <!-- View Toggle -->
+        <div class="flex bg-gray-700 p-1 rounded-full">
+          <button (click)="changeSummaryView('semanal')" [class]="'w-1/2 py-2 text-sm font-semibold rounded-full transition-colors ' + (summaryView() === 'semanal' ? 'bg-cyan-500 text-gray-900' : 'text-gray-300 hover:bg-gray-600')">
+            Semanal
+          </button>
+          <button (click)="changeSummaryView('mensual')" [class]="'w-1/2 py-2 text-sm font-semibold rounded-full transition-colors ' + (summaryView() === 'mensual' ? 'bg-cyan-500 text-gray-900' : 'text-gray-300 hover:bg-gray-600')">
+            Mensual
+          </button>
+        </div>
+        
+        @if (summaryView() === 'semanal') {
+          <!-- Weekly Summary -->
+          <div class="bg-gray-800 rounded-2xl p-4 shadow-lg">
+            <h3 class="text-lg font-semibold mb-4 text-center">Horas de la Semana</h3>
+            <div class="flex justify-around items-end h-40 space-x-2">
+              @for(day of weeklyHours(); track day.day){
+                <div class="flex-1 flex flex-col items-center">
+                  <div class="w-full bg-gray-700 rounded-t-md hover:bg-cyan-400/50" [style.height]="(day.hours / 10 * 100) + '%'"></div>
+                  <span class="text-xs mt-2 text-gray-400">{{day.day}}</span>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <!-- Monthly Summary -->
+          <div class="bg-gray-800 rounded-2xl p-4 shadow-lg text-center">
+            <p class="text-gray-400">El resumen mensual está en construcción.</p>
+          </div>
+        }
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 gap-4">
+          <div class="bg-gray-800 p-4 rounded-2xl">
+            <p class="text-sm text-gray-400">Horas esta semana</p>
+            <p class="text-2xl font-bold text-cyan-400">37.7h / 40h</p>
+          </div>
+          <div class="bg-gray-800 p-4 rounded-2xl">
+            <p class="text-sm text-gray-400">Horas este mes</p>
+            <p class="text-2xl font-bold">112h / 160h</p>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (activeView() === 'perfil') {
+       <div class="w-full max-w-sm space-y-6">
+        <!-- Profile Header -->
+        <div class="flex flex-col items-center space-y-4">
+          <div class="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="text-center">
+            <h2 class="text-xl font-bold text-white">Juan Pérez</h2>
+            <p class="text-sm text-gray-400">juan.perez@empresa.com</p>
+          </div>
+        </div>
+
+        <!-- Menu -->
+        <div class="bg-gray-800 rounded-2xl p-2 shadow-lg">
+          <ul class="space-y-1">
+            <li>
+              <a class="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-700/50 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                <span class="text-gray-200">Mis Datos Personales</span>
+              </a>
+            </li>
+            <li>
+              <a class="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-700/50 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                <span class="text-gray-200">Notificaciones</span>
+              </a>
+            </li>
+            <li>
+              <a class="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-700/50 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span class="text-gray-200">Ajustes</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- Logout Button -->
+        <div class="px-2">
+            <button class="w-full flex items-center justify-center space-x-3 p-3 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/40 hover:text-red-300 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+              <span>Cerrar Sesión</span>
+            </button>
+        </div>
+       </div>
+    }
+
+  </main>
+  
+  <!-- Footer Navigation -->
+  <footer class="fixed bottom-0 left-0 right-0 bg-gray-800/80 backdrop-blur-sm border-t border-gray-700">
+    <nav class="flex justify-around items-center h-16 max-w-md mx-auto">
+      <a (click)="changeView('hoy')" class="flex flex-col items-center p-2 rounded-lg cursor-pointer transition-colors" [class.text-cyan-400]="activeView() === 'hoy'" [class.text-gray-500]="activeView() !== 'hoy'">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <span class="text-xs font-bold">Hoy</span>
+      </a>
+      <a (click)="changeView('calendario')" class="flex flex-col items-center hover:text-cyan-400 transition-colors p-2 rounded-lg cursor-pointer" [class.text-cyan-400]="activeView() === 'calendario'" [class.text-gray-500]="activeView() !== 'calendario'">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+        <span class="text-xs">Calendario</span>
+      </a>
+      <a (click)="changeView('resumen')" class="flex flex-col items-center hover:text-cyan-400 transition-colors p-2 rounded-lg cursor-pointer" [class.text-cyan-400]="activeView() === 'resumen'" [class.text-gray-500]="activeView() !== 'resumen'">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2
