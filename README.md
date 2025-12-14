@@ -16,5 +16,7 @@ View your app in AI Studio: https://ai.studio/apps/drive/1ejtAJ6bhucZEhejXR5Zthc
 1. Install dependencies:
    `npm install`
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+3. Run the app with the Ionic CLI (keeps the browser from spawning extra tabs):
+   `npm run start`
+
+   This uses the locally installed Ionic CLI and disables the auto-open browser behavior. If you prefer the plain Angular dev server you can still run `npm run dev`.

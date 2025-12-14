@@ -1,9 +1,57 @@
-import { Component, ChangeDetectionStrategy, signal, computed, OnInit, OnDestroy, WritableSignal, ViewChild, ElementRef, effect, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  signal,
+  computed,
+  OnInit,
+  OnDestroy,
+  WritableSignal,
+  ViewChild,
+  ElementRef,
+  effect,
+  CUSTOM_ELEMENTS_SCHEMA,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-// Declare globals provided by CDN scripts
-declare var FullCalendar: any;
-declare var echarts: any;
+import {
+  IonApp,
+  IonAvatar,
+  IonButton,
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardTitle,
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonItem,
+  IonLabel,
+  IonList,
+  IonNote,
+  IonSegment,
+  IonSegmentButton,
+  IonTabBar,
+  IonTabButton,
+  IonTabs,
+  IonTitle,
+  IonToolbar,
+  IonPage,
+} from '@ionic/angular/standalone';
+import type { SegmentChangeEventDetail, SegmentCustomEvent } from '@ionic/core';
+import { addIcons } from 'ionicons';
+import {
+  arrowDownCircleOutline,
+  arrowUpCircleOutline,
+  barChartOutline,
+  calendarOutline,
+  logOutOutline,
+  notificationsOutline,
+  personCircleOutline,
+  settingsOutline,
+  timeOutline,
+} from 'ionicons/icons';
+import { Calendar } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import * as echarts from 'echarts';
 
 interface TimeEntry {
   type: 'in' | 'out';
@@ -15,19 +63,44 @@ type SummaryView = 'semanal' | 'mensual';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA] // Allow Ionic Web Components
+  imports: [
+    CommonModule,
+    IonApp,
+    IonAvatar,
+    IonButton,
+    IonCard,
+    IonCardContent,
+    IonCardHeader,
+    IonCardTitle,
+    IonContent,
+    IonHeader,
+    IonIcon,
+    IonItem,
+    IonLabel,
+    IonList,
+    IonNote,
+    IonSegment,
+    IonSegmentButton,
+    IonTabBar,
+    IonTabButton,
+    IonTabs,
+    IonTitle,
+    IonToolbar,
+    IonPage,
+  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class AppComponent implements OnInit, OnDestroy {
-  @ViewChild('calendarContainer') calendarEl!: ElementRef;
-  private calendar: any;
+  @ViewChild('calendarContainer') calendarEl!: ElementRef<HTMLElement>;
+  private calendar: Calendar | null = null;
 
-  @ViewChild('chartContainer') chartEl!: ElementRef;
-  private chart: any;
-  
+  @ViewChild('chartContainer') chartEl!: ElementRef<HTMLElement>;
+  private chart: echarts.ECharts | null = null;
+
   // State Signals
   currentTime: WritableSignal<Date> = signal(new Date());
   timeEntries: WritableSignal<TimeEntry[]> = signal([]);
@@ -36,11 +109,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // Mock data for summary
   weeklyHours = signal([
-    { day: 'L', hours: 8 }, { day: 'M', hours: 7.5 }, { day: 'X', hours: 8.2 },
-    { day: 'J', hours: 6 }, { day: 'V', hours: 8 }, { day: 'S', hours: 0 },
-    { day: 'D', hours: 0 }
+    { day: 'L', hours: 8 },
+    { day: 'M', hours: 7.5 },
+    { day: 'X', hours: 8.2 },
+    { day: 'J', hours: 6 },
+    { day: 'V', hours: 8 },
+    { day: 'S', hours: 0 },
+    { day: 'D', hours: 0 },
   ]);
-  
+
   // Computed Signals
   clockedIn = computed(() => {
     const lastEntry = this.timeEntries().slice(-1)[0];
@@ -50,13 +127,15 @@ export class AppComponent implements OnInit, OnDestroy {
   workedMilliseconds = computed(() => {
     let totalMs = 0;
     const entries = this.timeEntries();
-    
+
     for (let i = 0; i < entries.length; i += 2) {
       const inEntry = entries[i];
       const outEntry = entries[i + 1];
-      
+
       if (inEntry && inEntry.type === 'in') {
-        const endTime = outEntry ? outEntry.time.getTime() : this.currentTime().getTime();
+        const endTime = outEntry
+          ? outEntry.time.getTime()
+          : this.currentTime().getTime();
         totalMs += endTime - inEntry.time.getTime();
       }
     }
@@ -75,6 +154,18 @@ export class AppComponent implements OnInit, OnDestroy {
   private timerId: any;
 
   constructor() {
+    addIcons({
+      arrowDownCircleOutline,
+      arrowUpCircleOutline,
+      barChartOutline,
+      calendarOutline,
+      logOutOutline,
+      notificationsOutline,
+      personCircleOutline,
+      settingsOutline,
+      timeOutline,
+    });
+
     effect(() => {
       if (this.activeView() === 'calendario') {
         setTimeout(() => this.renderCalendar(), 0);
@@ -112,21 +203,22 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.chart) {
       this.chart.resize();
     }
-  }
+  };
 
   renderCalendar(): void {
     if (this.calendarEl && !this.calendar) {
-      this.calendar = new FullCalendar.Calendar(this.calendarEl.nativeElement, {
+      this.calendar = new Calendar(this.calendarEl.nativeElement, {
+        plugins: [dayGridPlugin],
         initialView: 'dayGridMonth',
         headerToolbar: {
           left: 'prev,next',
           center: 'title',
-          right: 'today'
+          right: 'today',
         },
         locale: 'es',
         buttonText: {
-          today: 'Hoy'
-        }
+          today: 'Hoy',
+        },
       });
       this.calendar.render();
     }
@@ -137,66 +229,69 @@ export class AppComponent implements OnInit, OnDestroy {
       this.chart = echarts.init(this.chartEl.nativeElement);
       const option = {
         tooltip: {
-          trigger: 'axis'
+          trigger: 'axis',
         },
         xAxis: {
           type: 'category',
-          data: this.weeklyHours().map(d => d.day),
-          axisLine: { lineStyle: { color: '#888' } }
+          data: this.weeklyHours().map((d) => d.day),
+          axisLine: { lineStyle: { color: '#888' } },
         },
         yAxis: {
           type: 'value',
           splitLine: { lineStyle: { color: '#444' } },
-          axisLine: { lineStyle: { color: '#888' } }
+          axisLine: { lineStyle: { color: '#888' } },
         },
-        series: [{
-          name: 'Horas',
-          type: 'bar',
-          data: this.weeklyHours().map(d => d.hours),
-          itemStyle: {
-            color: '#22d3ee', // Tailwind's cyan-400
-            borderRadius: [4, 4, 0, 0]
-          },
-          emphasis: {
+        series: [
+          {
+            name: 'Horas',
+            type: 'bar',
+            data: this.weeklyHours().map((d) => d.hours),
             itemStyle: {
-                color: '#67e8f9' // Tailwind's cyan-300
-            }
-          }
-        }],
+              color: '#22d3ee',
+              borderRadius: [4, 4, 0, 0],
+            },
+            emphasis: {
+              itemStyle: {
+                color: '#67e8f9',
+              },
+            },
+          },
+        ],
         grid: {
-            left: '3%',
-            right: '4%',
-            bottom: '3%',
-            containLabel: true
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true,
         },
-        backgroundColor: 'transparent'
-      };
+        backgroundColor: 'transparent',
+      } as echarts.EChartsOption;
       this.chart.setOption(option);
     }
   }
 
-
   handleClockInOut(): void {
     const newEntry: TimeEntry = {
       type: this.clockedIn() ? 'out' : 'in',
-      time: new Date()
+      time: new Date(),
     };
-    this.timeEntries.update(entries => [...entries, newEntry]);
+    this.timeEntries.update((entries) => [...entries, newEntry]);
   }
 
   changeView(view: ActiveView): void {
     this.activeView.set(view);
   }
 
-  changeSummaryView(event: any): void {
-    this.summaryView.set(event.detail.value);
+  changeSummaryView(event: SegmentCustomEvent<SegmentChangeEventDetail>): void {
+    this.summaryView.set(event.detail.value as SummaryView);
   }
-  
+
   pad(num: number): string {
     return num.toString().padStart(2, '0');
   }
 
   formatTime(date: Date): string {
-    return `${this.pad(date.getHours())}:${this.pad(date.getMinutes())}:${this.pad(date.getSeconds())}`;
+    return `${this.pad(date.getHours())}:${this.pad(date.getMinutes())}:${this.pad(
+      date.getSeconds(),
+    )}`;
   }
 }
