@@ -2,11 +2,13 @@
 import '@angular/compiler';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideZonelessChangeDetection } from '@angular/core';
+import { provideIonicAngular } from '@ionic/angular/standalone';
 import { AppComponent } from './src/app.component';
 
 bootstrapApplication(AppComponent, {
   providers: [
-    provideZonelessChangeDetection()
+    provideZonelessChangeDetection(),
+    provideIonicAngular()
   ],
 }).catch(err => console.error(err));
 
