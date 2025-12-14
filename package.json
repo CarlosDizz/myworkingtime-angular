@@ -7,8 +7,8 @@
     "dev": "ng serve",
     "build": "ng build",
     "preview": "ng serve --configuration=production",
-    "start": "ionic serve",
-    "ionic:serve": "ionic serve"
+    "start": "ionic serve --no-open --host=localhost --port=8100",
+    "ionic:serve": "ionic serve --no-open --host=localhost --port=8100"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.11",
