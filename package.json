@@ -6,9 +6,18 @@
   "scripts": {
     "dev": "ng serve",
     "build": "ng build",
-    "preview": "ng serve --configuration=production"
+    "preview": "ng serve --configuration=production",
+    "start": "ionic serve",
+    "ionic:serve": "ionic serve"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.11",
+    "@fullcalendar/daygrid": "^6.1.11",
+    "@ionic/angular": "^8.2.8",
+    "@ionic/angular-server": "^8.2.8",
+    "@ionic/core": "^8.2.8",
+    "echarts": "^5.5.1",
+    "ionicons": "^7.4.0",
     "rxjs": "^7.8.2",
     "@angular/compiler": "^21.0.0",
     "@angular/platform-browser": "^21.0.0",
@@ -20,8 +29,9 @@
     "tailwindcss": "latest"
   },
   "devDependencies": {
+    "@ionic/cli": "^7.2.0",
     "@types/node": "^22.14.0",
-    "typescript": "~5.8.2",
+    "typescript": "~5.9.2",
     "vite": "^6.2.0"
   }
 }
